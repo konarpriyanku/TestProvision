@@ -1,0 +1,50 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+# Specify minimum Vagrant version and Vagrant API version
+Vagrant.require_version ">= 1.6.0"
+VAGRANTFILE_API_VERSION = "2"
+
+require 'yaml'
+current_dir    = File.dirname(File.expand_path(__FILE__))
+settings = YAML.load_file("#{current_dir}/settings-dev.yaml")
+
+
+
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+  config.vm.provider "virtualbox" do |v|
+      v.customize ["setextradata", :id, "VBoxInternal2/SharedFoldersEnableSymlinksCreate/v-root", "1"]
+    end
+
+  # Iterate through entries in YAML file to create boxes
+  settings[:webservers].each do |server|
+    config.vm.define server[:name] do |srv|
+      srv.vm.box = server[:box]
+      srv.vm.network server[:network], ip: server[:ip]
+      server[:port_forward].each do |portconfig|
+          srv.vm.network "forwarded_port",  host: portconfig[:host],guest: portconfig[:guest], auto_correct: true
+      end
+      srv.vm.provision :shell do |sh|
+          sh.name = "loadbalancer provisioner"
+          sh.args =  server[:args]
+          sh.path= "#{settings[:provision_root]}#{server[:script]}"
+      end
+    end
+  end
+
+
+  settings[:appservers].each do |server|
+      config.vm.define server[:name] do |app|
+        app.vm.box = server[:box]
+        app.vm.hostname =server[:hostname]
+        app.vm.network server[:network], ip: server[:ip]
+        app.vm.provision :shell do |sh|
+            sh.name = "app provisioner"
+            sh.args =  server[:args]
+            sh.path= "#{settings[:provision_root]}#{server[:script]}"
+          end
+      end
+  end
+
+end

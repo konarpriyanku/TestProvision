@@ -1,0 +1,32 @@
+---
+:default_box: ubuntu/trusty32
+:default_network: private_network
+:provision_root: provision/scripts/
+:webservers:
+- :box: ubuntu/trusty32
+  :name: nginx_load_balancer
+  :script: lb_ubuntu.sh
+  :port_forward:
+  - :host: 8081
+    :guest: 8081
+  :network: private_network
+  :ip: 10.1.1.10
+  :args:
+  - arg1,arg2,arg3
+:appservers:
+- :box: ubuntu/trusty32
+  :name: node_app_server 1
+  :hostname: xebia.app.dev1
+  :network: private_network
+  :ip: 10.1.1.20
+  :script: node_ubuntu.sh
+  :args:
+  - sample-app
+- :box: ubuntu/trusty32
+  :name: node_app_server 2
+  :hostname: xebia.app.dev2
+  :network: private_network
+  :ip: 10.1.1.30
+  :script: node_ubuntu.sh
+  :args:
+  - sample-app
